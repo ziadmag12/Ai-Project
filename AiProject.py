@@ -216,3 +216,100 @@ class MinimaxAgent:
         valid = board.get_valid_locations()
        
         return col if col in valid else random.choice(valid)
+
+
+
+
+
+
+
+
+
+class Connect4GUI:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Connect 4 AI")
+
+        self.board = Board()
+        self.ai = MinimaxAgent(depth=3)
+        self.turn = PLAYER_PIECE
+
+        canvas_width = COLUMNS * CELL_SIZE
+        canvas_height = ROWS * CELL_SIZE
+        self.canvas = tk.Canvas(root, width=canvas_width, height=canvas_height, bg="blue")
+        self.canvas.pack()
+
+        self.draw_board()
+        self.canvas.bind("<Button-1>", self.click_event)
+
+        self.restart_button = tk.Button(root, text="Restart Game", command=self.restart_game)
+        self.restart_button.pack(pady=10)
+
+    def draw_board(self):
+        self.canvas.delete("all")
+        for r in range(ROWS):
+            for c in range(COLUMNS):
+                x1 = c * CELL_SIZE + PADDING
+                y1 = r * CELL_SIZE + PADDING
+                x2 = (c + 1) * CELL_SIZE - PADDING
+                y2 = (r + 1) * CELL_SIZE - PADDING
+                piece = self.board.board[r][c]
+                color = "white"
+                if piece == PLAYER_PIECE:
+                    color = "red"
+                elif piece == AI_PIECE:
+                    color = "yellow"
+                self.canvas.create_oval(x1, y1, x2, y2, fill=color)
+
+    def click_event(self, event):
+        col = event.x // CELL_SIZE
+        # منع الحركة إذا كانت ليست دور اللاعب أو العمود غير صالح
+        if col < 0 or col >= COLUMNS or self.turn != PLAYER_PIECE or self.board.board[0][col] != EMPTY:
+            return
+
+        self.board.drop_piece(col, PLAYER_PIECE)
+        self.draw_board()
+
+        if check_win(self.board, PLAYER_PIECE):
+            messagebox.showinfo("Game Over", "You win! 🎉")
+            self.turn = EMPTY
+            return
+
+        if self.board.is_full():
+            messagebox.showinfo("Game Over", "Draw!")
+            self.turn = EMPTY
+            return
+
+        self.turn = AI_PIECE
+        self.root.after(200, self.ai_move) # تأخير بسيط لحركة الكمبيوتر
+
+    def ai_move(self):
+        if self.turn != AI_PIECE: return
+
+        col = self.ai.pick_best_move(self.board)
+
+        self.board.drop_piece(col, AI_PIECE)
+        self.draw_board()
+
+        if check_win(self.board, AI_PIECE):
+            messagebox.showinfo("Game Over", "AI Wins! 💻")
+            self.turn = EMPTY
+            return
+
+        if self.board.is_full():
+            messagebox.showinfo("Game Over", "Draw!")
+            self.turn = EMPTY
+            return
+
+        self.turn = PLAYER_PIECE
+
+    def restart_game(self):
+        self.board = Board()
+        self.turn = PLAYER_PIECE
+        self.draw_board()
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    Connect4GUI(root)
+    root.mainloop()
